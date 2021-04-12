@@ -46,4 +46,18 @@ class TodoList extends StateNotifier<List<Todo>> {
   void removeTodo(String id) {
     state = state.where((element) => element.id != id).toList();
   }
+
+  void editTodo({required String id, required String desc}) {
+    state = [
+      for (final todo in state)
+        if (todo.id == id)
+          Todo(
+            id: todo.id,
+            completed: todo.completed,
+            description: desc,
+          )
+        else
+          todo,
+    ];
+  }
 }

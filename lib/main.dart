@@ -78,7 +78,9 @@ class MyApp extends HookWidget {
             Dismissible(
               key: ValueKey(filterTodoList[i].id),
               onDismissed: (_) {
-                context.read(todoListProvider.notifier).removeTodo(filterTodoList[i].id);
+                context
+                    .read(todoListProvider.notifier)
+                    .removeTodo(filterTodoList[i].id);
               },
               child: ProviderScope(
                 overrides: [
@@ -167,16 +169,46 @@ class TodoItem extends HookWidget {
   Widget build(BuildContext context) {
     debugPrint('build TodoItem');
     final todo = useProvider(_currentTodo);
+    final itemFocusNode = useFocusNode();
+    useListenable(itemFocusNode);
+    final isFocused = itemFocusNode.hasFocus;
+    final textEditingController = useTextEditingController();
+    final textFieldFocusNode = useFocusNode();
     return Material(
       elevation: 3.0,
-      child: ListTile(
-        leading: Checkbox(
-          onChanged: (bool? value) {
-            context.read(todoListProvider.notifier).toggleTodo(todo.id);
+      child: Focus(
+        focusNode: itemFocusNode,
+        onFocusChange: (focused) {
+          debugPrint('${context.read(_currentTodo).description} $focused');
+                    if (focused) {
+            textEditingController.text = todo.description;
+          } else {
+            // Commit changes only when the textfield is unfocused, for performance
+            context
+                .read(todoListProvider.notifier)
+                .editTodo(id: todo.id, desc: textEditingController.text);
+          }
+        },
+        child: ListTile(
+          onTap: () {
+            debugPrint('onTap');
+            itemFocusNode.requestFocus();
+            textFieldFocusNode.requestFocus();
           },
-          value: todo.completed,
+          leading: Checkbox(
+            onChanged: (bool? value) {
+              context.read(todoListProvider.notifier).toggleTodo(todo.id);
+            },
+            value: todo.completed,
+          ),
+          title: isFocused
+              ? TextField(
+                  autofocus: true,
+                  focusNode: textFieldFocusNode,
+                  controller: textEditingController,
+                )
+              : Text(todo.description),
         ),
-        title: Text(todo.description),
       ),
     );
   }
